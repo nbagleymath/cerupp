@@ -10,8 +10,7 @@ with applications to ceramic and crystal media," available on arXiv or researchg
 
 This manual provides details on theory, usage, and examples and should be the main point of reference for developers and users.
 
-The MATLAB release is in `cerupp_1.0.1_matlab/`. The Julia and C++
-versions are in `cerupp_0.9.0_julia/` and `cerupp_0.9.0_cpp/`.
+The MATLAB release is in `cerupp_1.0.1_matlab/`
 
 The main MATLAB driver is `cerupp.m`. The physics-facing root files include the
 propagation stepper, medium models, Sellmeier formulas, mask construction,
