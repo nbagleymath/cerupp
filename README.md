@@ -1,10 +1,7 @@
 # CerUPP
 
 CerUPP is a spectrally resolved Forward Envelope Equation solver for
-ultrashort-pulse propagation in ceramic, crystal, and other media. The public
-repository is:
-
-https://github.com/nbagleymath/cerupp
+ultrashort-pulse propagation in ceramic, crystal, and other media. 
 
 Please cite the CerUPP arXiv manual when using this code:
 
