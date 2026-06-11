@@ -12,8 +12,7 @@
 % includes plasma generation, nonlinear absorption, easily-modifiable spatial
 % and frequency dependence of refractive index, and many other features.
 %
-% The manual for this code is available in ceruppmanual/sample.tex.
-%
+% The CerUPP manual documents the model, numerical update, and run workflow:
 % If you use this code in your work, please cite:
 %   N. Bagley. May 2026.
 %   "CerUPP: Spectrally resolved ultrashort-pulse envelope propagation with
@@ -22,8 +21,8 @@
 %
 % Corresponding author:
 %   nbagley@smu.edu
-% For feature or bug requests, contact nbagley@smu.edu or use the github
-% repo for this code: https://github.com/nbagleymath
+% For feature or bug requests, contact nbagley@smu.edu or use the GitHub
+% repo for this code: https://github.com/nbagleymath/cerupp
 %
 % Relevant Publications:
 %
@@ -44,25 +43,18 @@
 %     Available at:
 %     https://scholar.smu.edu/hum_sci_mathematics_etds/28/
 %
-%   4. N. Bagley,
-%     "Modeling of Filamentation and Plasma Generation in Nd:YAG at 1030 nm:
-%     Closing the Experimental-Simulation Gap,"
-%     arXiv preprint, May 2026.
-%
-% Selected background references for built-in model pieces:
+% Background references for model development:
 %   - Propagation-model guide: A. Couairon, E. Brambilla, T. Corti,
 %     D. Majus, O. de J. Ramirez-Gongora, and M. Kolesik. 2011.
 %     "Practitioner's guide to laser pulse propagation models and
 %     simulation: Numerical implementation and practical usage of modern
 %     pulse propagation models."
 %     European Physical Journal Special Topics, 199(1):5-76.
-%   - Dry-air refractivity formula used by Sellmeier_Air:
-%     P. Ciddor. Applied Optics 35, 1566-1573 (1996).
-%   - YAG Sellmeier used by Sellmeier_YAG:
-%     D. E. Zelmon, D. L. Small, and R. Page,
-%     "Refractive-index measurements of undoped yttrium aluminum garnet
-%     from 0.4 to 5.0 um," Applied Optics 37, 4933-4935 (1998),
-%     DOI: 10.1364/AO.37.004933.
+%   - YAG modeling in mid IR:
+%     F. Silva, D. R. Austin, A. Thai, M. Baudisch, M. Hemmer,
+%     D. Faccio, A. Couairon, and J. Biegert,
+%     "Multi-octave supercontinuum generation from mid-infrared
+%     filamentation in a bulk crystal," Nature Communications 3, 807 (2012).
 %   - Original solid-state Keldysh ionization rate used by the
 %     q-series branch in plasma_keldysh_setup:
 %     L. V. Keldysh. Sov. Phys. JETP 20, 1307-1314 (1965).
@@ -70,14 +62,11 @@
 %     channel sum used by the corrected branch in plasma_keldysh_setup:
 %     N. S. Shcheblanov, M. E. Povarnitsyn, P. N. Terekhin,
 %     S. Guizard, and A. Couairon. Phys. Rev. A 96, 063410 (2017).
-%   - Kane-band two-band notation used by that corrected solid-state
+%   - Kane-band two-band notation used by corrected solid-state
 %     branch:
 %     E. O. Kane. Journal of Physics and Chemistry of Solids 1,
 %     249-261 (1957).
-%   - Dawson-function approximation used by the original Keldysh
-%     q-series branch:
-%     S. L. Moshier. Cephes Mathematical Library. Netlib software
-%     distribution. Available at https://www.netlib.org/cephes/.
+
 %
 %
 %
@@ -264,7 +253,7 @@
 %   8. Binary k and omega mask cleanup, transverse absorber, and final
 %      binary k and omega cleanup
 %==========================================================================
-% USER SETUP BLOCKS
+% CONTENTS
 %==========================================================================
 %
 % Intended user modification workflow:
@@ -372,6 +361,8 @@
 %
 %==========================================================================
 %
+
+
 clearvars;
 clear functions;
 close all force;
@@ -528,6 +519,29 @@ allow_keldysh_cache_reuse_without_match = false; % true lets CerUPP reuse a
 % that flag is false. The plasma OFI source keeps its own independent
 % plasma_ofi_use_remaining_neutral_factor_flag choice.
 nla_use_ofi_rate_law_flag = true;
+
+% OFI event-energy accounting.
+% The default OFI-based NLA sink uses the accepted numerical OFI event
+% ledger from the plasma step. It removes optical energy from the NLA
+% substep according to the applied OFI increment after source depletion,
+% density limits, and numerical clipping/projection.
+% The rate_matched mode is the explicit local ODE law
+% dI/dz = -Udep_matched*rho_scale*W_ion(I).
+% nla_check_ofi_event_energy_flag records the event-energy check without
+% changing the field. nla_use_ofi_event_depletion_flag applies the plasma
+% OFI event increment as NLA optical loss. Event depletion requires plasma OFI
+% bookkeeping, OFI-based NLA, and matching plasma/NLA neutral-reservoir
+% weighting. nla_ofi_energy_accounting_mode records rate_matched,
+% ofi_event_check, or ofi_event_depletion. Avalanche and recombination use
+% separate plasma/Drude channels.
+nla_ofi_energy_accounting_mode = 'ofi_event_depletion';
+nla_check_ofi_event_energy_flag = false;
+nla_use_ofi_event_depletion_flag = true;
+[nla_ofi_energy_accounting_mode, ~, nla_check_ofi_event_energy_flag, ...
+    nla_use_ofi_event_depletion_flag] = ...
+    nla_support.resolve_ofi_depletion_accounting_mode( ...
+        nla_ofi_energy_accounting_mode, nla_check_ofi_event_energy_flag, ...
+        nla_use_ofi_event_depletion_flag);
 
 % NLA sink weighting.
 % In static beta_K mode, true uses clamp((rho_supply-rho)/rho_nt,0,1);
@@ -773,7 +787,7 @@ output_root = ''; % '' keeps the built-in parent output folder.
 run_tag = ''; % '' keeps the built-in run bucket under output_root.
               % Example nonempty tag: demo_run, which would write under the example parent as
               % /cerupp/output_plots/run_demo_run/<run_id>
-curr_cerupp_version = '1.0'; % Single CerUPP version label written into startup/run metadata and status files.
+curr_cerupp_version = '1.0.1'; % Single CerUPP version label written into startup/run metadata and status files.
                              % Increase it for feature or contract changes, not for ordinary parameter-only edits.
 enable_setup_freeze_guard_flag = true; % true keeps late freeze mismatches as hard errors.
                                        % Turning it off is not recommended.
@@ -1031,7 +1045,7 @@ hbar = 1.054571817e-34; %[J*s] reduced Planck constant
 % exp(-pi*n*ratio)
 % * D(sqrt(pi^2*(2*nu - 2*x + n)/(2*K_ell(gamma2)*E_ell(gamma2)))).
 % CerUPP evaluates D(...) with the same three-region rational Dawson fit
-% cited above from Stephen L. Moshier's Cephes Mathematical Library.
+% used by plasma_keldysh_setup.
 % The interference-corrected Kane-band branch of Shcheblanov et al.
 % (2017) keeps the same exponential factor and threshold terms but uses
 % prefactor_Kane(gamma_K)*S_Kane(gamma_K,nu), where
@@ -1191,9 +1205,9 @@ nonparaxial_diffraction_order = 2; % Truncation order of k_perp-series for kz=sq
 % Bottom line: the sampled vacuum-wavelength span is
 % lambda_min = 2*pi*c / max(omega_window) and
 % lambda_max = 2*pi*c / min(omega_window), provided omega_window stays > 0.
-t_window                = 2.5e-12; %[s] total time window
-n                       = 1536;    % temporal grid points
-lambda_ref              = 650e-9;  %[m] reference wavelength; sets the FFT-grid origin omega_ref = 2*pi*c/lambda_ref of the spectral computational domain
+t_window                = 1.6666666666666666e-12; %[s] total time window; preserves the previous sampled angular-frequency span with n=1024
+n                       = 1024;    % temporal grid points
+lambda_ref              = 650.1409613929999e-9;  %[m] reference wavelength; sets the FFT-grid origin omega_ref = 2*pi*c/lambda_ref of the spectral computational domain
 mask_pad_w              = 10;      % spectral guard-band width in frequency-grid points
 mask_pad_x              = 2;       % number of x-edge guard grid points used to set
                                    % the hard radial simple-mask aperture when
@@ -1211,13 +1225,8 @@ spatial_inner_frac  = 0.97; % Keep spatial_inner_frac of the transverse
                             % remaining outer edge region.
 kperp_alpha         = 0.4;  % Set the physical transverse-k review scale
                             % through kcut_phys = kperp_alpha * k_min_med.
-                            % This is a model-validity diagnostic threshold,
-                            % not a runtime deletion rule in mask_f.
 kperp_ramp_frac     = 0.10; % Set the diagnostic review-shoulder width
                             % ramp(omega)=kperp_ramp_frac*kcut(omega).
-                            % The runtime transverse-k mask does not apply
-                            % this radial shoulder; smooth-mask mode uses
-                            % the raised-cosine absorber only in real space.
 kperp_nyquist_frac  = 0.90; % Keep runtime transverse-k support inside
                             % kperp_nyquist_frac of the sampled rectangular
                             % FFT-grid Nyquist boundary.
@@ -1228,7 +1237,7 @@ mask_loss_warn_frac = 0.01; % Setup-only soft warning threshold: warn if the
 
 % x and y use centered grids on [-window/2, +window/2).
 comp_window_x_width   = 2.2e-4;        %[m] width of x window
-num_x_pts       = 512;           % number of x grid points
+num_x_pts       = 256;           % number of x grid points
 comp_window_y_width   = comp_window_x_width; %[m] width of y window
 num_y_pts       = num_x_pts;     % number of y grid points
 n_recompute_tol = 1e-12;      % n-map rebuild tolerance. above this absolute threshold a change in medium is flagged if z dependent medium is on
@@ -1791,6 +1800,9 @@ keldysh_setup_seed = struct( ...
     'rebuild_policy', rebuild_policy, ...
     'keldysh_display_k', keldysh_display_k, ...
     'plasma_ofi_use_remaining_neutral_factor_flag', plasma_ofi_use_remaining_neutral_factor_flag, ...
+    'nla_ofi_energy_accounting_mode', nla_ofi_energy_accounting_mode, ...
+    'nla_check_ofi_event_energy_flag', nla_check_ofi_event_energy_flag, ...
+    'nla_use_ofi_event_depletion_flag', nla_use_ofi_event_depletion_flag, ...
     'medium_kind', medium_kind, ...
     'keldysh_lookup_csv_name', keldysh_lookup_csv_name, ...
     'allow_keldysh_cache_reuse_without_match', ...
@@ -2642,6 +2654,12 @@ for curr_z_step = 1:num_zsteps
                         plasma_ofi_use_remaining_neutral_factor_flag, ...
                     'nla_use_remaining_neutral_factor_flag', ...
                         nla_use_remaining_neutral_factor_flag, ...
+                    'nla_ofi_energy_accounting_mode', ...
+                        nla_ofi_energy_accounting_mode, ...
+                    'nla_check_ofi_event_energy_flag', ...
+                        nla_check_ofi_event_energy_flag, ...
+                    'nla_use_ofi_event_depletion_flag', ...
+                        nla_use_ofi_event_depletion_flag, ...
                     'resolved_nla_setup_closure', ...
                         resolved_nla_setup_closure, ...
                     'nla_z_rk2_flag_effective', ...

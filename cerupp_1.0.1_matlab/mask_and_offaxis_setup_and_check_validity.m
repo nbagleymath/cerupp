@@ -37,15 +37,15 @@ methods(Static)
     lambda_fund_um = lambda_fund / 1e-6;
     if strcmpi(propagation_medium_name, 'AIR')
         % cerupp.m owns the built-in near-800-nm Air placeholder hard stop.
-        % This helper only soft-warns on the broader Air Sellmeier nominal
-        % range so there is one fundamental-wavelength hard-stop owner.
-        if (lambda_fund_um < 0.2) || (lambda_fund_um > 2.0)
+        % This helper only soft-warns on the Ciddor dry-air validity range
+        % so there is one fundamental-wavelength hard-stop owner.
+        if (lambda_fund_um < 0.23) || (lambda_fund_um > 1.69)
             run_warn_state = run_warn_state_utils.emit_warn_once_with_phase( ...
                 run_warn_state, 'setup', ...
                 'setup_air_sellmeier_nominal_range_soft', ...
                 'CerUPP:DriverSellmeierAirRange', ...
-                ['Resolved medium.name=Air normally expects lambda_fund within the simplified dry-air ', ...
-                 'warning/clamp interval (~0.2-2.0 um); got %.6g um. Continuing with the built-in fit-edge clamp ', ...
+                ['Resolved medium.name=Air normally expects lambda_fund within the Ciddor dry-air ', ...
+                 'validity/clamp interval (~0.23-1.69 um); got %.6g um. Continuing with the built-in fit-edge clamp ', ...
                  'inside Sellmeier_Air(lambda).'], ...
                 lambda_fund_um);
         end
@@ -101,7 +101,7 @@ methods(Static)
     % The runtime transverse-k passband is the rectangular sampled-grid
     % Nyquist gate. kcut_phys, kcut_w, and ramp_w are physical-review
     % diagnostics based on the medium wavenumber and kperp_alpha; they are
-    % not live deletion rules in build_masks(...).
+    % not applied filters.
     k_nyx = max(abs(kx));
     k_nyy = max(abs(ky));
     k_rect_gate_x = kperp_nyquist_frac * k_nyx;
@@ -306,7 +306,7 @@ methods(Static)
             launch_taper_start = 0;
         end
     end
-    paraxial_review_angle_deg = 5.0;
+    paraxial_review_angle_deg = 3.0;
     forward_launch_angle_tol = 1e-12;
 
     % Convert each beam's projected x/y angles into a forward-propagating

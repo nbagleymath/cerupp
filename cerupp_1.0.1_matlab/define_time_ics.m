@@ -62,7 +62,7 @@ function t_profile = define_time_ics(t, t0_gauss, beta_chirp, omega_fund, omega_
 % sigma_c^2 = t0_gauss^2 - i*beta_chirp convention corresponds to
 % spectral phase exp(+1i*beta_chirp*Omega0^2/2) under the forward FFT
 % kernel exp(-1i*Omega0*t). After A_S=A0*exp(-1i*(omega_fund-omega_ref)*t),
-% the same chirped pulse appears shifted on the omega_ref solver grid.
+% this chirped pulse appears shifted on the omega_ref solver grid.
 
 %
 % Output:

@@ -94,7 +94,7 @@ function [A_S, A_F, rhs_plasma, rho, A_SSF, step_diag, step_warning_ledgers, ste
 %       S_NLA,time = 0.5 * Udep_matched * density_scale * (W_ion(I)./I) .* A,
 %     where density_scale is whichever OFI weighting branch is active and
 %     Udep_matched is the setup-side optical depletion energy assigned to
-%     each OFI event in the matched sink.
+%     each OFI event represented by the active rate law.
 %     The scalar matched-depletion form below covers the dynamic branch and
 %     the static sum_K sigma_K I^K branch. It applies
 %       dI/dz = -Udep_matched * rho_ofi_scale * W_ion(I),
@@ -121,6 +121,13 @@ function [A_S, A_F, rhs_plasma, rho, A_SSF, step_diag, step_warning_ledgers, ste
 %     Udep_matched * remaining_neutral * sigma_eff for remaining-neutral
 %     runs, or Udep_matched * rho_ofi_scale * sigma_eff for the fixed
 %     cap-aware density-scale branch.
+%   - OFI event-energy accounting is separate from the rate-matched law.
+%     Check mode reports Udep_matched times the applied OFI event increment
+%     from the plasma update without changing the field. Applied mode uses
+%     that same increment for NLA optical loss after the neutral-reservoir
+%     logic, density limits, and numerical clipping/projection. Avalanche and
+%     recombination stay in separate plasma/Drude channels and are not
+%     included in Udep_matched*drho_OFI.
 %   Optional neutral-fraction modifier:
 %   - The user-facing replenishment knobs are
 %     plasma_ofi_use_remaining_neutral_factor_flag and
@@ -546,7 +553,7 @@ else
         [a_nonlinear_2_d, a_core_nonlinear, j_mpa_core, ...
          nla_diag_core, nla_softwarn_state, nla_book] = apply_nla_step( ...
             a_nonlinear_2_d, a_core_nonlinear, rho_core_for_nla, ...
-            nx, ny, dz, nla_step_ctx, nla_softwarn_state, nla_custom_args);
+            plasma_book, nx, ny, dz, nla_step_ctx, nla_softwarn_state, nla_custom_args);
         % The NLA helper also returns the updated core rows, so later
         % diagnostics do not need to regather the post-NLA core state from
         % the full field.
@@ -1045,8 +1052,8 @@ function [A_S, A_core_out, rhs_plasma, rho, rho_core_for_nla, ...
 %                         NLA physics and other post-step plasma consumers;
 %                         when requested, this is the final post-step
 %                         rho(t) surface regardless of the outer plasma RK order
-% rho_finite_scan       : private density surface reserved for strict
-%                         finite-scan crash attribution; when requested,
+% rho_finite_scan       : private density surface reserved for finite-state
+%                         crash attribution; when requested,
 %                         this tracks the rho_end state actually evaluated
 %                         on the current plasma step
 % post_step_peak_rho    : step-owned scalar rho peak evaluated on the
@@ -1055,7 +1062,7 @@ function [A_S, A_core_out, rhs_plasma, rho, rho_core_for_nla, ...
 %                         full post-step rho surface is needed
 % plasma_stiffness_diagnostic_step : optional plasma stiffness summary
 % plasma_softwarn_state : updated plasma warning ledger
-% plasma_book           : optional applied plasma accounting bundle
+% plasma_book           : optional current-step plasma accounting record
 % plasma_stage_workspace : returned reusable plasma workspace for later
 %                          stages or later steps when the stored shapes
 %                          still match
@@ -1254,7 +1261,7 @@ end
 % VI. File-local helper family: NLA wrapper and loss accounting.
 %==========================================================================
 function [A_S, A_core_out, j_mpa_core, nla_diag_core, nla_softwarn_state, nla_book] = apply_nla_step( ...
-    A_S, A_core_in, rho_core_for_nla, nx, ny, dz, nla_step_ctx, nla_softwarn_state, nla_custom_args)
+    A_S, A_core_in, rho_core_for_nla, plasma_book, nx, ny, dz, nla_step_ctx, nla_softwarn_state, nla_custom_args)
 % NLA/MPA update.
 % - NLA is applied through the intensity loss law first and then mapped
 %   back onto the complex envelope. In amplitude notation
@@ -1280,6 +1287,13 @@ function [A_S, A_core_out, j_mpa_core, nla_diag_core, nla_softwarn_state, nla_bo
 %   Dynamic W_ion(I) is the same runtime Keldysh rate law that cerupp.m
 %   built in Section 2E from the selected material inputs and then passed
 %   into this step.
+% - OFI event-depletion NLA is a separate applied mode. It uses the
+%   applied OFI event-density increment returned by the plasma substep for
+%   NLA optical loss. Avalanche and recombination are excluded from
+%   Udep_matched*drho_OFI and stay in separate plasma/Drude channels. If the
+%   OFI split is not valid for the current step because of a density limit,
+%   projection, or repair, or if the requested local loss exceeds available
+%   intensity, the applied mode stops the step.
 %   K_display only feeds the derived sigma_K,eff / beta_eff_* diagnostic
 %   remap, while the static sum_K sigma_K I^K branch uses its local
 %   log-slope K_eff(I)=d ln(W_ion)/d ln(I). sigma_K,eff and beta_eff_*
@@ -1304,6 +1318,9 @@ function [A_S, A_core_out, j_mpa_core, nla_diag_core, nla_softwarn_state, nla_bo
 %                           runs, otherwise the core-only [Nc, Nt] density
 %                           array returned by the plasma step for this same
 %                           z update
+% plasma_book             : optional current-step plasma accounting record.
+%                           OFI event modes require drho_ofi_accepted and
+%                           exact_valid_core from this same plasma substep
 % nx, ny                  : full transverse grid size used when the helper
 %                           reshapes the updated field back to [Nx, Ny, Nt]
 % dz                      : NLA substep length [m]
@@ -1324,7 +1341,7 @@ function [A_S, A_core_out, j_mpa_core, nla_diag_core, nla_softwarn_state, nla_bo
 %                           intensity-only; depletion-aware branches may
 %                           also depend on the current rho or remaining-
 %                           neutral weighting.
-% nla_diag_core           : core-only diagnostic bundle. The matched-
+% nla_diag_core           : core-only diagnostic record. The matched-
 %                           Keldysh sigma_K,eff / beta_eff_full /
 %                           beta_eff_applied surfaces and their raw
 %                           intensity/rho reconstruction inputs are filled
@@ -1332,7 +1349,7 @@ function [A_S, A_core_out, j_mpa_core, nla_diag_core, nla_softwarn_state, nla_bo
 %                           otherwise those fields remain empty while the
 %                           physical NLA sink still applies normally
 % nla_softwarn_state      : updated NLA warning ledger
-% nla_book                : optional applied-loss accounting bundle from
+% nla_book                : optional applied-loss accounting record from
 %                           this same core-only NLA update
 % The returned field A_S stays flattened as [Nx*Ny, Nt]. A_core_out,
 % j_mpa_core, and the array fields inside nla_diag_core stay on core rows
@@ -1346,6 +1363,7 @@ function [A_S, A_core_out, j_mpa_core, nla_diag_core, nla_softwarn_state, nla_bo
     nla_mode_payload = nla_step_ctx.mode_payload;
     nla_rk2_flag = nla_step_ctx.nla_rk2_flag;
     core_idx = nla_step_ctx.core_idx;
+    dt_vec = nla_step_ctx.dt_vec;
     plasma_runtime_cfg = nla_step_ctx.plasma_runtime_cfg;
     rho_nt_m3 = nla_step_ctx.rho_nt_m3;
     need_j_model_pre = nla_step_ctx.need_j_model_pre;
@@ -1370,6 +1388,10 @@ function [A_S, A_core_out, j_mpa_core, nla_diag_core, nla_softwarn_state, nla_bo
         nla_mode_payload, 'resolved_closure', 'nla_step_ctx.mode_payload');
     keldysh_nla_enabled = logical(struct_utils.req_struct_field( ...
         resolved_nla_closure, 'keldysh_nla_enabled', 'nla_mode_payload.resolved_closure'));
+    ofi_depletion_accounting_mode = char(string(struct_utils.opt_struct_field( ...
+        resolved_nla_closure, 'ofi_depletion_accounting_mode', 'rate_matched')));
+    ofi_depletion_accounting_mode_code = uint8(struct_utils.opt_struct_field( ...
+        resolved_nla_closure, 'ofi_depletion_accounting_mode_code', uint8(0)));
     static_nla_mode_id = uint8(nla_mode_payload.static_nla_mode_id);
 
     % III. Math block: gather the pre-NLA core rows and form I0 = |A|^2 there.
@@ -1520,6 +1542,7 @@ function [A_S, A_core_out, j_mpa_core, nla_diag_core, nla_softwarn_state, nla_bo
 
     j_core = [];
     i_new = i0_core;
+    ofi_ledger_diag_core = [];
     dz_like = cast(dz, 'like', i0_core);
     if isa(i0_core, 'single')
         tiny_i = realmin('single');
@@ -1530,10 +1553,20 @@ function [A_S, A_core_out, j_mpa_core, nla_diag_core, nla_softwarn_state, nla_bo
             'I0_core must be single or double; got class %s.', class(i0_core));
     end
     if keldysh_nla_enabled
-        [i_new, j_core, nla_diag_core, nla_softwarn_state] = nla_support.apply_matched_kernel( ...
-            i0_core, remaining_neutral_core, nla_runtime_cfg, need_j_model_pre, ...
-            nla_rk2_flag, tiny_i, dz_like, need_keldysh_effective_diag_maps, ...
-            nla_softwarn_state, nla_diag_core);
+        if ofi_depletion_accounting_mode_code == uint8(2)
+            [i_new, j_core, ofi_ledger_diag_core] = nla_support.apply_ofi_ledger_kernel( ...
+                i0_core, plasma_book, dt_vec, nla_runtime_cfg, dz_like, tiny_i, ...
+                need_j_model_pre);
+        else
+            [i_new, j_core, nla_diag_core, nla_softwarn_state] = nla_support.apply_matched_kernel( ...
+                i0_core, remaining_neutral_core, nla_runtime_cfg, need_j_model_pre, ...
+                nla_rk2_flag, tiny_i, dz_like, need_keldysh_effective_diag_maps, ...
+                nla_softwarn_state, nla_diag_core);
+            if ofi_depletion_accounting_mode_code == uint8(1)
+                [~, ofi_ledger_diag_core] = nla_support.build_ofi_ledger_loss_rate( ...
+                    i0_core, plasma_book, dt_vec, nla_runtime_cfg, false);
+            end
+        end
         if need_keldysh_effective_diag_maps
             nla_diag_core.rho_core = rho_core;
         end
@@ -1556,12 +1589,59 @@ function [A_S, A_core_out, j_mpa_core, nla_diag_core, nla_softwarn_state, nla_bo
         reshape(A_S, nx, ny, nt), [], A_core, core_idx, i0_core, i_new, rho_core, dz, tiny_i, ...
         j_core, need_nla_book, neutral_frac_clamp_mask, nla_softwarn_state, ...
         propagation_support.want_full_bookkeeping_ledger_local(nla_runtime_cfg));
+    if need_nla_book && isstruct(nla_book)
+        nla_book.ofi_depletion_accounting_mode = ofi_depletion_accounting_mode;
+        nla_book.ofi_depletion_accounting_mode_code = ofi_depletion_accounting_mode_code;
+        if ~isempty(ofi_ledger_diag_core)
+            ledger_fields = fieldnames(ofi_ledger_diag_core);
+            for ledger_field_idx = 1:numel(ledger_fields)
+                ledger_field_name = ledger_fields{ledger_field_idx};
+                nla_book.(ledger_field_name) = ofi_ledger_diag_core.(ledger_field_name);
+            end
+            if isfield(nla_book, 'loss_rate_applied_core') && ...
+                    ~isempty(nla_book.loss_rate_applied_core)
+                nla_book.nla_applied_energy_density_core = ...
+                    integrate_nla_loss_rate_with_plasma_dt_local( ...
+                        nla_book.loss_rate_applied_core, dt_vec);
+                nla_book.ofi_ledger_energy_mismatch_density_core = ...
+                    nla_book.nla_applied_energy_density_core - ...
+                    nla_book.ofi_ledger_energy_density_core;
+                energy_floor = max(realmin(class(nla_book.nla_applied_energy_density_core)), ...
+                    eps(class(nla_book.nla_applied_energy_density_core)));
+                nla_book.ofi_ledger_energy_relative_mismatch_core = ...
+                    nla_book.ofi_ledger_energy_mismatch_density_core ./ ...
+                    max(abs(nla_book.ofi_ledger_energy_density_core), energy_floor);
+            end
+        end
+    end
     A_S = reshape(a_s_full, nx * ny, nt);
 end
 
 %======================================================================%
 % VII. Late-file runtime/validation/timing helpers.
 %======================================================================%
+function timeint_core = integrate_nla_loss_rate_with_plasma_dt_local(core_td_rows, dt_vec)
+% Integrate NLA loss rows on the same right-endpoint dt convention as the OFI event record.
+
+    if isempty(core_td_rows)
+        timeint_core = [];
+        return;
+    end
+    [~, nt] = size(core_td_rows);
+    dt_vec = double(dt_vec(:));
+    if numel(dt_vec) ~= (nt - 1)
+        error('CerUPP:NLA:LedgerDtShapeMismatch', ...
+            'Expected numel(dt_vec)=Nt-1=%d for NLA ledger integration; got %d.', ...
+            nt - 1, numel(dt_vec));
+    end
+    if nt == 1
+        timeint_core = zeros(size(core_td_rows, 1), 1, 'like', core_td_rows);
+        return;
+    end
+    dt_row = reshape(cast(dt_vec(:), 'like', real(core_td_rows(1))), 1, []);
+    timeint_core = sum(core_td_rows(:, 2:nt) .* dt_row, 2);
+end
+
 function timeint_core = integrate_plasma_core_td_rows(core_td_rows, dt_vec)
 % Integrate one core-row plasma history over time with the same trapezoid
 % weights implied by the authoritative dt_vec.

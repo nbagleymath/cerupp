@@ -1,0 +1,19 @@
+cff-version: 1.2.0
+message: "If you use CerUPP, please cite the CerUPP arXiv manual and the archived source release."
+title: "CerUPP: Spectrally resolved ultrashort-pulse envelope propagation with applications to ceramic and crystal media"
+type: software
+authors:
+  - family-names: Bagley
+    given-names: Nicholas
+repository-code: "https://github.com/nbagleymath/cerupp"
+license: MIT
+version: "1.0.1"
+date-released: "2026-06-11"
+preferred-citation:
+  type: article
+  title: "CerUPP: Spectrally resolved ultrashort-pulse envelope propagation with applications to ceramic and crystal media"
+  authors:
+    - family-names: Bagley
+      given-names: Nicholas
+  year: 2026
+  url: "https://github.com/nbagleymath/cerupp"
