@@ -12,12 +12,12 @@
 % includes plasma generation, nonlinear absorption, easily-modifiable spatial
 % and frequency dependence of refractive index, and many other features.
 %
-% The CerUPP arXiv manual documents the model, numerical update, and run workflow:
+% The CerUPP online manual documents the model, numerical update, and run workflow:
 % If you use this code in your work, please cite:
 %   N. Bagley. May 2026.
 %   "CerUPP: Spectrally resolved ultrashort-pulse envelope propagation with
 %   applications to ceramic and crystal media."
-%   Available on arXiv.
+%   Available at on researchgate at: https://doi.org/10.13140/RG.2.2.26038.87363
 %
 % Corresponding author:
 %   nbagley@smu.edu
