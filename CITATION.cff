@@ -1,19 +1,34 @@
 cff-version: 1.2.0
-message: "If you use CerUPP, please cite the CerUPP arXiv manual and the archived source release."
+message: "If you use CerUPP, please cite the CerUPP manual."
 title: "CerUPP: Spectrally resolved ultrashort-pulse envelope propagation with applications to ceramic and crystal media"
 type: software
 authors:
-  - family-names: Bagley
-    given-names: Nicholas
+  - family-names: "Bagley"
+    given-names: "Nicholas"
 repository-code: "https://github.com/nbagleymath/cerupp"
-license: MIT
+url: "https://github.com/nbagleymath/cerupp"
+license: "MIT"
 version: "1.0.1"
-date-released: "2026-06-11"
+date-released: "2026-06-12"
+abstract: "CerUPP is an open-source MATLAB solver for spectrally resolved ultrashort-pulse envelope propagation in ceramic and crystal media."
+keywords:
+  - "nonlinear optics"
+  - "ultrafast optics"
+  - "laser propagation"
+  - "filamentation"
+  - "supercontinuum"
+  - "forward envelope equation"
+  - "MATLAB"
+  - "YAG"
+  - "plasma physics"
+  - "computational physics"
+
 preferred-citation:
-  type: article
-  title: "CerUPP: Spectrally resolved ultrashort-pulse envelope propagation with applications to ceramic and crystal media"
+  type: manual
+  title: "CerUPP 0.9.9: Spectrally resolved ultrashort-pulse propagation with applications to ceramic and crystal media"
   authors:
-    - family-names: Bagley
-      given-names: Nicholas
+    - family-names: "Bagley"
+      given-names: "Nicholas"
   year: 2026
+  doi: "10.13140/RG.2.2.22683.43044"
   url: "https://doi.org/10.13140/RG.2.2.22683.43044"
