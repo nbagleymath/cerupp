@@ -12,7 +12,7 @@
 % includes plasma generation, nonlinear absorption, easily-modifiable spatial
 % and frequency dependence of refractive index, and many other features.
 %
-% The CerUPP manual documents the model, numerical update, and run workflow:
+% The CerUPP arXiv manual documents the model, numerical update, and run workflow:
 % If you use this code in your work, please cite:
 %   N. Bagley. May 2026.
 %   "CerUPP: Spectrally resolved ultrashort-pulse envelope propagation with
@@ -694,6 +694,8 @@ show_plots_flag = false; % true opens plot windows while the run/postprocessing 
 make_initial_plots_flag = true;    % true writes the initial-condition plots before propagation starts.
 save_outputs_as_fig_flag = true;   % true keeps MATLAB .fig copies of saved plots.
 save_outputs_as_png_flag = true;   % true writes PNG copies of saved plots.
+plot_surface_shading_mode = 'interp'; % 'interp' smooths surface/heatmap rendering;
+                                      % use 'flat' to show stored samples directly.
 plot_warn_flag = true;             % true keeps plot/export helper warnings
                                    % enabled for the main plots, initial
                                    % plots, scatter3 plots, and isosurfaces.
@@ -945,10 +947,11 @@ end
 %   memmon_projection_stride_steps already freeze in block 2 because the
 %   Section 2 setup/report path reads them there.
 % - plot_warn_flag, show_plots_flag, show_3d_diagnostic_plots_flag,
-%   make_initial_plots_flag, save_outputs_as_fig_flag, and
-%   save_outputs_as_png_flag freeze in block 3A because the setup-time
-%   plot path reads them there and Sections 4 and 6 later reuse that
-%   frozen block-3A snapshot for the runtime/postprocess plot policy.
+%   make_initial_plots_flag, save_outputs_as_fig_flag,
+%   save_outputs_as_png_flag, and plot_surface_shading_mode freeze in block
+%   3A because the setup-time plot path reads them there and Sections 4 and
+%   6 later reuse that frozen block-3A snapshot for the runtime/postprocess
+%   plot policy.
 % - Only the remaining runtime/output knobs above stay live until Section
 %   4 settles the run-time plan that propagation and postprocessing use.
 % - For custom extensions, pass per-step inputs through
@@ -1981,7 +1984,8 @@ setup_plot_controls_cfg = struct( ...
     'show_3d_diagnostic_plots_flag', show_3d_diagnostic_plots_flag, ...
     'make_initial_plots_flag', make_initial_plots_flag, ...
     'save_outputs_as_fig_flag', save_outputs_as_fig_flag, ...
-    'save_outputs_as_png_flag', save_outputs_as_png_flag);
+    'save_outputs_as_png_flag', save_outputs_as_png_flag, ...
+    'plot_surface_shading_mode', plot_surface_shading_mode);
 launch_cfg = struct( ...
     'fwhm_fund', fwhm_fund, ...
     'td_pulse', td_pulse, ...

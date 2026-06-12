@@ -744,7 +744,7 @@ classdef propagation_support
                         ['OFI event-energy accounting requires both plasma_flag ', ...
                          'and nl_absorption_flag at step-runtime setup.']);
                 end
-                % OFI event modes need the plasma-owned mechanism split
+                % OFI event modes need the plasma mechanism split
                 % on every propagation step, independent of plot/checkpoint
                 % cadence. Rate-matched runs keep the cheaper diagnostic policy.
                 step_diag_policy.need_plasma_bookkeeping_ledger = true;

@@ -2196,34 +2196,9 @@ classdef checkpoint_utils
             if nargin < 2 || isempty(emit_setup_warning)
                 emit_setup_warning = false;
             end
-            metadata_path = checkpoint_utils.metadata_path_local();
-            if ~compat_utils.isfile_compat(metadata_path)
-                if emit_setup_warning
-                    run_warn_state = run_warn_state_utils.emit_warn_once_with_phase( ...
-                        run_warn_state, 'setup', ...
-                        'missing_release_metadata_file', ...
-                        'CerUPP:MissingReleaseMetadataFile', ...
-                        ['Release metadata file not found: %s. ', ...
-                         'Falling back to the built-in release identity defaults for this snapshot.'], ...
-                        metadata_path);
-                end
-                meta = checkpoint_utils.default_release_metadata_local();
-                return;
-            end
-            text_in = fileread(metadata_path);
-            meta = struct( ...
-                'release_version', checkpoint_utils.read_macro_value_local(text_in, 'CerUPPReleaseVersion'), ...
-                'restart_schema_tag', checkpoint_utils.read_macro_value_local(text_in, 'CerUPPRestartSchemaTag'), ...
-                'restart_schema_version', str2double(checkpoint_utils.read_macro_value_local(text_in, 'CerUPPRestartSchemaVersion')), ...
-                'restart_compat_version', str2double(checkpoint_utils.read_macro_value_local(text_in, 'CerUPPRestartCompatVersion')));
-            if ~isfinite(meta.restart_schema_version) || (fix(meta.restart_schema_version) ~= meta.restart_schema_version)
-                error('CerUPP:InvalidReleaseMetadataValue', ...
-                    'restart schema version in %s must be a finite integer.', metadata_path);
-            end
-            if ~isfinite(meta.restart_compat_version) || (fix(meta.restart_compat_version) ~= meta.restart_compat_version)
-                error('CerUPP:InvalidReleaseMetadataValue', ...
-                    'restart compatibility version in %s must be a finite integer.', metadata_path);
-            end
+            emit_setup_warning = logical(emit_setup_warning); %#ok<NASGU>
+            % Public release identity is carried by the built-in metadata below.
+            meta = checkpoint_utils.default_release_metadata_local();
         end
 
         function meta = default_release_metadata_local()
@@ -2234,21 +2209,6 @@ classdef checkpoint_utils
                 'restart_compat_version', 1);
         end
 
-        function value = read_macro_value_local(text_in, macro_name)
-            pattern = ['\\newcommand\{\\' macro_name '\}\{\s*\\detokenize\{([^}]*)\}\s*\}'];
-            tokens = regexp(text_in, pattern, 'tokens', 'once');
-            if isempty(tokens)
-                error('CerUPP:MissingReleaseMetadataMacro', ...
-                    'Missing release metadata macro \\%s.', macro_name);
-            end
-            value = char(tokens{1});
-        end
-
-        function metadata_path = metadata_path_local()
-            this_file = mfilename('fullpath');
-            repo_root = fileparts(fileparts(fileparts(this_file)));
-            metadata_path = fullfile(repo_root, 'cerupp_release_metadata.tex');
-        end
     end
 % RUN_STATUS_IO_UTILS Run-status JSON and pointer publication helpers.
 % Purpose:

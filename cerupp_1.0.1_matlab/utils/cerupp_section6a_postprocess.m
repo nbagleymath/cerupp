@@ -801,6 +801,7 @@ try
                 'create_figure', true);
         if ok_lab_plot_session
             surf(z_lab_grid, t_lab_ps, p_lab, 'EdgeColor', 'none');
+            shading(gca, get_plot_surface_shading_mode_local(plot_session));
             xlabel('z [m]');
             ylabel('t_{lab} = t + tau_g(z) [ps] (code t is pulse-frame time; tau_g referenced to plotted-segment start)');
             zlabel('P(t_lab,z) [W]');
@@ -1362,6 +1363,7 @@ try
                 'create_figure', true);
         if ok_custom_vis_session
             h_custom = surf(D.store_z, x_cut, log_f_custom, 'EdgeColor', 'none');
+            shading(gca, get_plot_surface_shading_mode_local(plot_session));
             set(h_custom, 'FaceAlpha', 'flat', 'AlphaData', isfinite(f_custom_plot), ...
                 'AlphaDataMapping', 'none');
             view(0,90);
@@ -3597,6 +3599,7 @@ try
             if ok_angle_plot_session
                 log_i_theta_lambda = log10(i_theta_lambda + eps_safe);
                 surf(lambda_nm_plot, theta_grid*180/pi, log_i_theta_lambda, 'EdgeColor', 'none');
+                shading(gca, get_plot_surface_shading_mode_local(plot_session));
                 view(0,90);
                 set(gca,'YDir','normal'); axis tight;
                 xlabel('Vacuum wavelength [nm]');
@@ -3710,6 +3713,7 @@ try
                 'create_figure', true);
         if ok_visible_threshold_session
             surf(D.store_z, x_cut, c_idx, 'EdgeColor', 'none');
+            shading(gca, get_plot_surface_shading_mode_local(plot_session));
             view(0,90);
             set(gca,'YDir','normal'); axis tight;
             colormap(cmap);
@@ -3993,6 +3997,7 @@ try
                         'Failed to initialize visible-fluence overlay plot session.');
                 end
                 h_vis_log = surf(z_plot, x_cut_plot, log_f_rz, 'EdgeColor', 'none');
+                shading(gca, get_plot_surface_shading_mode_local(plot_session));
                 set(h_vis_log, 'FaceAlpha', 'flat', 'AlphaData', isfinite(f_rz_plot), ...
                     'AlphaDataMapping', 'none');
                 view(0,90);
@@ -5760,7 +5765,7 @@ function run_warn_state = emit_surface_mask_support_plot_local( ...
 
         ax_handle = axes('Parent', fig_handle);
         surf(ax_handle, x_plot, y_plot, z_plot, 'EdgeColor', 'none');
-        shading(ax_handle, 'flat');
+        shading(ax_handle, get_plot_surface_shading_mode_local(plot_session));
         view(ax_handle, 0, 90);
         set(ax_handle, 'YDir', 'normal');
         axis(ax_handle, 'tight');
@@ -6119,6 +6124,21 @@ function txt = runtime_control_value_repr_local(v)
         txt = mat2str(v);
     catch
         txt = sprintf('<%s>', class(v));
+    end
+end
+
+function surface_shading_mode = get_plot_surface_shading_mode_local(plot_session)
+% Resolve the shared display-only surface shading mode for direct surf plots.
+
+    surface_shading_mode = 'interp';
+    if ~(isstruct(plot_session) && isscalar(plot_session) && ...
+            isfield(plot_session, 'surface_shading_mode'))
+        return;
+    end
+    [ok_parse, surface_shading_mode_candidate] = ...
+        plot_support_utils.parse_surface_shading_mode(plot_session.surface_shading_mode);
+    if ok_parse
+        surface_shading_mode = surface_shading_mode_candidate;
     end
 end
 

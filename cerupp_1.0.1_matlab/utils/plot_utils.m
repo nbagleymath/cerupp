@@ -445,6 +445,10 @@ function [session, renderer_opts, run_warn_state, phase_tag, do_warn, plot_args]
     if isfield(plot_settings, 'close_figure') && ~isempty(plot_settings.close_figure)
         plot_settings_args = [plot_settings_args, {'close_figure', plot_settings.close_figure}];
     end
+    if plot_utils_option_specs_include_field_local(option_specs, 'surface_shading_mode')
+        plot_settings_args = [plot_settings_args, ...
+            {'surface_shading', plot_settings.surface_shading_mode}];
+    end
     [varargin, run_warn_state, phase_tag, record_failure_tag] = ...
         plot_support_utils.consume_export_state_options(varargin, 'png_export');
     [session, renderer_opts] = plot_support_utils.begin_main_plot( ...
@@ -481,7 +485,7 @@ info_nf = struct();
         struct('field', 'cbar_label', 'names', {{'cbar_label'}}, 'parse_fn', @plot_support_utils.parse_char_scalar, 'default_value', ''), ...
         struct('field', 'replace_nonfinite_with_nan', 'names', {{'replace_nonfinite_with_nan'}}, 'parse_fn', @plot_support_utils.parse_bool_like, 'default_value', true), ...
         struct('field', 'skip_nonfinite_scan', 'names', {{'skip_nonfinite_scan'}}, 'parse_fn', @plot_support_utils.parse_bool_like, 'default_value', false), ...
-        struct('field', 'surface_shading_mode', 'names', {{'surface_shading', 'shading_mode'}}, 'parse_fn', @plot_support_utils.parse_surface_shading_mode, 'default_value', 'flat') ...
+        struct('field', 'surface_shading_mode', 'names', {{'surface_shading', 'shading_mode'}}, 'parse_fn', @plot_support_utils.parse_surface_shading_mode, 'default_value', 'interp') ...
     ], varargin{:});
 save_name_new = session.save_name_new;
 visible_now = session.visible_now;
@@ -492,7 +496,7 @@ multi_line_specs_apply_to_all = false;
 replace_nonfinite_with_nan_plot = true;
 skip_nonfinite_scan = false;
 cbar_label = '';
-surface_shading_mode = 'flat';
+surface_shading_mode = 'interp';
 treat_nan_as_blowup_plot = main_plot_opts.treat_nan_as_blowup;
 multi_line_specs = main_plot_opts.multiline_specs_bundle.specs;
 multi_line_specs_apply_to_all = main_plot_opts.multiline_specs_bundle.apply_all;
@@ -1447,6 +1451,25 @@ function diag_scan = plot_utils_scan_diag_values_local(x_in, cap_hi, check_compl
     end
     diag_scan.tol_imag = 1e-12 * max(diag_scan.real_mag, 1);
     diag_scan.complex_leakage = (diag_scan.imag_mag > diag_scan.tol_imag);
+end
+
+function tf = plot_utils_option_specs_include_field_local(option_specs, field_name)
+% True when a renderer option-spec list exposes the requested field.
+
+    tf = false;
+    if isempty(option_specs)
+        return;
+    end
+    for kk = 1:numel(option_specs)
+        spec = option_specs(kk);
+        if iscell(option_specs)
+            spec = option_specs{kk};
+        end
+        if isstruct(spec) && isfield(spec, 'field') && strcmp(char(spec.field), field_name)
+            tf = true;
+            return;
+        end
+    end
 end
 
 function plot_utils_rethrow_if_contract_error_local(me)
