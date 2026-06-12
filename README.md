@@ -6,7 +6,7 @@ ultrashort-pulse propagation in ceramic, crystal, and other media.
 Please cite the CerUPP manual when using this code:
 
 N. Bagley, "CerUPP: Spectrally resolved ultrashort-pulse envelope propagation
-with applications to ceramic and crystal media," available at on researchgate at: https://doi.org/10.13140/RG.2.2.22683.43044
+with applications to ceramic and crystal media," available on researchgate at: https://doi.org/10.13140/RG.2.2.22683.43044
 
 This manual provides details on theory, usage, and examples and should be the main point of reference for developers and users.
 
