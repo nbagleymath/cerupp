@@ -17,7 +17,7 @@
 %   N. Bagley. May 2026.
 %   "CerUPP: Spectrally resolved ultrashort-pulse envelope propagation with
 %   applications to ceramic and crystal media."
-%   Available at on researchgate at: https://doi.org/10.13140/RG.2.2.26038.87363
+%   Available at on researchgate at: https://doi.org/10.13140/RG.2.2.22683.43044
 %
 % Corresponding author:
 %   nbagley@smu.edu
