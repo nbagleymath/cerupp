@@ -1,5 +1,5 @@
 cff-version: 1.2.0
-message: "If you use CerUPP, please cite the CerUPP manual."
+message: "If you use CerUPP, please cite the source-code or the CerUPP manual."
 title: "CerUPP: Spectrally resolved ultrashort-pulse envelope propagation with applications to ceramic and crystal media"
 type: software
 authors:
@@ -10,6 +10,7 @@ url: "https://github.com/nbagleymath/cerupp"
 license: "MIT"
 version: "1.0.1"
 date-released: "2026-06-12"
+doi: "10.5281/zenodo.20672577"
 abstract: "CerUPP is an open-source MATLAB solver for spectrally resolved ultrashort-pulse envelope propagation in ceramic and crystal media."
 keywords:
   - "nonlinear optics"
