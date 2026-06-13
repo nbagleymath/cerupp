@@ -784,7 +784,12 @@ classdef nla_support
 
         function [mode_name, mode_code, check_flag, applied_flag] = ...
                 resolve_ofi_depletion_accounting_mode(varargin)
-        % Resolve OFI event-energy accounting from the public booleans.
+        % Resolve OFI event-energy accounting from the mode string or from
+        % the older boolean pair. Accepted string modes are
+        % rate_matched, ofi_event_check, and ofi_event_depletion. The
+        % returned booleans are compatibility/status fields: rate_matched
+        % clears both, ofi_event_check sets only the check flag, and
+        % ofi_event_depletion sets only the depletion flag.
 
             if nargin == 1 && (ischar(varargin{1}) || ...
                     (isstring(varargin{1}) && isscalar(varargin{1})))

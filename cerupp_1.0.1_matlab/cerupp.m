@@ -12,12 +12,12 @@
 % includes plasma generation, nonlinear absorption, easily-modifiable spatial
 % and frequency dependence of refractive index, and many other features.
 %
-% The CerUPP online manual documents the model, numerical update, and run workflow:
+% The CerUPP arXiv manual documents the model, numerical update, and run workflow:
 % If you use this code in your work, please cite:
 %   N. Bagley. May 2026.
 %   "CerUPP: Spectrally resolved ultrashort-pulse envelope propagation with
 %   applications to ceramic and crystal media."
-%   Available at on researchgate at: https://doi.org/10.13140/RG.2.2.22683.43044
+%   Available on researchgate at: https://doi.org/10.13140/RG.2.2.22683.43044.
 %
 % Corresponding author:
 %   nbagley@smu.edu
@@ -258,25 +258,25 @@
 %
 % Intended user modification workflow:
 %   -- Section 1: change run physics, material defaults, flags, or numerical size.
-%     1A. Physical constants [lines 445-450]
-%     1B. Top-Level Flag Dashboard [lines 451-949]
-%     1C. Input-condition physical parameters [lines 950-1007]
-%     1D. Medium parameters [lines 1008-1174]
-%     1E. Computational parameters [lines 1175-1325]
+%     1A. Physical constants [lines 441-446]
+%     1B. Top-Level Flag Dashboard [lines 447-972]
+%     1C. Input-condition physical parameters [lines 973-1030]
+%     1D. Medium parameters [lines 1031-1197]
+%     1E. Computational parameters [lines 1198-1346]
 %   -- Section 3: change the launched pulse profile itself.
-%     3A. Temporal pulse profile construction [lines 1939-2083], or edit
+%     3A. Temporal pulse profile construction [lines 1960-2105], or edit
 %         define_time_ics.m to set a custom time envelope t_profile
 %     3B. Transverse/time-domain launch field construction [lines
-%         2084-2105], or edit build_spatiotemporal_ics.m when you want to
+%         2106-2127], or edit build_spatiotemporal_ics.m when you want to
 %         modify the full spatial launch profile
 %   -- Section 2: change the built z-domain, sampled grids, or medium/operator setup.
 %     2B-II. Build the z-domain from stepsize and distance_to_propagate
-%         [lines 1379-1452]
-%     2C. Sampled time/frequency grids [lines 1453-1547]
-%     2C-I. Time/frequency window setup [lines 1454-1516]
-%     2C-II. Transverse grids and Fourier coordinates setup [lines 1517-1547]
+%         [lines 1397-1470]
+%     2C. Sampled time/frequency grids [lines 1471-1565]
+%     2C-I. Time/frequency window setup [lines 1472-1534]
+%     2C-II. Transverse grids and Fourier coordinates setup [lines 1535-1565]
 %     2E. Medium state definition (and possible z dependence) and key
-%         propagation operator setup [lines 1654-1856]
+%         propagation operator setup [lines 1672-1877]
 %   -- Use major_step_custom_args and medium_builder_custom_args only when
 %      the main Section 1/2/3 knobs do not cover what you need.
 %   -- To add a new tracked diagnostic, the easiest way is to allocate
@@ -299,65 +299,70 @@
 % WORKFLOW
 %==========================================================================
 %
-% Section 1 [line 442]: Constants, User-defined Computational and Physical Parameters
-%   1A [line 445]: Physical constants [USER SETUP BLOCK]
-%   1B [line 451]: Top-Level Flag Dashboard [USER SETUP BLOCK]
-%   1B-I [line 458]: Physics model toggles [USER SETUP BLOCK]
-%   1B-II [line 555]: Physics solver/integration toggles [USER SETUP BLOCK]
-%   1B-III [line 600]: Runtime/debug controls [USER SETUP BLOCK]
-%   1B-IV [line 650]: Output, diagnostics, and saved-file controls [USER SETUP BLOCK]
-%   1C [line 950]: Input-condition physical parameters [USER SETUP BLOCK]
-%   1D [line 1008]: Medium parameters [USER SETUP BLOCK]
-%   1E [line 1175]: Computational parameters [USER SETUP BLOCK]
-%   1E-I [line 1176]: Computational setup knobs [USER SETUP BLOCK]
+% Section 1 [line 438]: Constants, User-defined Computational and Physical Parameters
+%   1A [line 441]: Physical constants [USER SETUP BLOCK]
+%   1B [line 447]: Top-Level Flag Dashboard [USER SETUP BLOCK]
+%   1B-I [line 454]: Physics model toggles [USER SETUP BLOCK]
+%   1B-II [line 575]: Physics solver/integration toggles [USER SETUP BLOCK]
+%   1B-III [line 620]: Runtime/debug controls [USER SETUP BLOCK]
+%   1B-IV [line 670]: Output, diagnostics, and saved-file controls [USER SETUP BLOCK]
+%   1C [line 973]: Input-condition physical parameters [USER SETUP BLOCK]
+%   1D [line 1031]: Medium parameters [USER SETUP BLOCK]
+%   1E [line 1198]: Computational parameters [USER SETUP BLOCK]
+%   1E-I [line 1199]: Computational setup knobs [USER SETUP BLOCK]
 %
-% Section 2 [line 1329]: Automatic Setup for the Propagation Loop
-%   2A [line 1336]: Startup and medium handoff before automatic setup
-%   2B [line 1356]: Grid validation and z-domain build
-%   2B-I [line 1362]: Grid size validation
-%   2B-II [line 1379]: Build the z-domain from stepsize and distance_to_propagate [USER SETUP BLOCK]
-%   2C [line 1453]: Sampled time/frequency grids [USER SETUP BLOCK]
-%   2C-I [line 1454]: Time/frequency window setup [USER SETUP BLOCK]
-%   2C-II [line 1517]: Transverse grids and Fourier coordinates setup [USER SETUP BLOCK]
-%   2D [line 1548]: Build the runtime absorber, k and omega mask geometry, and k-cut plan
-%   2E [line 1654]: Medium state definition (and possible z dependence) and key propagation operator setup [USER SETUP BLOCK]
-%   2E-I [line 1695]: Plasma / OFI / NLA step input preparation
-%   2F [line 1857]: Launch-center, projected-tilt mapping, and setup-only mask diagnostics
+% Section 2 [line 1347]: Automatic Setup for the Propagation Loop
+%   2A [line 1354]: Startup and medium handoff before automatic setup
+%   2B [line 1374]: Grid validation and z-domain build
+%   2B-I [line 1380]: Grid size validation
+%   2B-II [line 1397]: Build the z-domain from stepsize and distance_to_propagate [USER SETUP BLOCK]
+%   2C [line 1471]: Sampled time/frequency grids [USER SETUP BLOCK]
+%   2C-I [line 1472]: Time/frequency window setup [USER SETUP BLOCK]
+%   2C-II [line 1535]: Transverse grids and Fourier coordinates setup [USER SETUP BLOCK]
+%   2D [line 1566]: Build the runtime absorber, k and omega mask geometry, and k-cut plan
+%   2E [line 1672]: Medium state definition (and possible z dependence)
+%       and key propagation operator setup [USER SETUP BLOCK]
+%   2E-I [line 1713]: Plasma / OFI / NLA step input preparation
+%   2F [line 1878]: Launch-center, projected-tilt mapping, and setup-only mask diagnostics
 %
-% Section 3 [line 1936]: User-defined Initial Conditions (ICs)
-%   3A [line 1939]: Temporal pulse profile construction [USER SETUP BLOCK]
-%   3B [line 2084]: Transverse/time-domain launch field construction [USER SETUP BLOCK]
-%   3C [line 2106]: Setup-only IC sanity checks and initial-condition plot setup
+% Section 3 [line 1957]: User-defined Initial Conditions (ICs)
+%   3A [line 1960]: Temporal pulse profile construction [USER SETUP BLOCK]
+%   3B [line 2106]: Transverse/time-domain launch field construction [USER SETUP BLOCK]
+%   3C [line 2128]: Setup-only IC sanity checks and initial-condition plot setup
 %
-% Section 4 [line 2119]: Final Pre-loop Setup
-%   4A [line 2121]: Finalize the launch-dependent pre-loop setup, optional initial IC plots, and the stored-z arrays for the loop
+% Section 4 [line 2141]: Final Pre-loop Setup
+%   4A [line 2143]: Finalize the launch-dependent pre-loop setup, optional
+%       initial IC plots, and the stored-z arrays for the loop
 %
-% Section 5 [line 2166]: Propagation Loop
-%   5A [line 2168]: Final pre-loop guard and state allocation
-%   5A-I [line 2169]: Recheck every setup block that Sections 1-4 already froze
-%   5A-II [line 2177]: Pre-loop checkpoint, diagnostic, and monitor state
-%   5A-III [line 2299]: Close the setup warning summary before entering the loop
-%   5B [line 2354]: Begin the CerUPP propagation loop
-%   5B-I [line 2455]: Per-step medium rebuild decision, rebuild if needed, and dz-change operator refresh
-%   5B-II [line 2780]: Pick the current step's storage/checkpoint policy and the matching plasma/NLA step contexts
-%   5C [line 2836]: CerUPP split-step update
-%   5C-I [line 2951]: Optional pulse-energy tracking
-%   5D [line 3023]: Stored-plane diagnostics and z traces
-%   5D-I [line 3025]: Built-in stored-plane reductions and writes
-%   5E [line 3169]: Checkpoint-only restart/fullsave writes
-%   5E-I [line 3174]: Hand the current step state plus the latest stored diagnostics to the checkpoint save helper
-%   5E-II [line 3187]: Optional full-field checkpoint companion snapshots
-%   5F [line 3255]: Finalize the packed store, end-of-run saves, and post-run restart state
+% Section 5 [line 2188]: Propagation Loop
+%   5A [line 2190]: Final pre-loop guard and state allocation
+%   5A-I [line 2191]: Recheck every setup block that Sections 1-4 already froze
+%   5A-II [line 2199]: Pre-loop checkpoint, diagnostic, and monitor state
+%   5A-III [line 2321]: Close the setup warning summary before entering the loop
+%   5B [line 2376]: Begin the CerUPP propagation loop
+%   5B-I [line 2477]: Per-step medium rebuild decision, rebuild if needed,
+%       and dz-change operator refresh
+%   5B-II [line 2808]: Pick the current step's storage/checkpoint policy and
+%       the matching plasma/NLA step contexts
+%   5C [line 2864]: CerUPP split-step update
+%   5C-I [line 2979]: Optional pulse-energy tracking
+%   5D [line 3051]: Stored-plane diagnostics and z traces
+%   5D-I [line 3053]: Built-in stored-plane reductions and writes
+%   5E [line 3197]: Checkpoint-only restart/fullsave writes
+%   5E-I [line 3202]: Hand the current step state plus the latest stored
+%       diagnostics to the checkpoint save helper
+%   5E-II [line 3215]: Optional full-field checkpoint companion snapshots
+%   5F [line 3283]: Finalize the packed store, end-of-run saves, and post-run restart state
 %
-% Section 6 [line 3259]: Plotting, Visualization, and Analytics
-%   6A [line 3263]: Post-run plots, CSVs, and postprocess outputs
-%   6B [line 3384]: Runtime summary and timing diagnostics
-%   6B-I [line 3385]: Pre-final-write memory/progress sample
-%   6B-II [line 3426]: Explicit substep timing diagnostic
-%   6C [line 3565]: Final run summary, end-of-run full save, and final status files
-%   6C-I [line 3566]: Gather the final warning summary and last MEMMON state
-%   6C-II [line 3598]: Optional end-of-run full-output save
-%   6C-III [line 3653]: Finalize run-status and run-pointer files
+% Section 6 [line 3287]: Plotting, Visualization, and Analytics
+%   6A [line 3291]: Post-run plots, CSVs, and postprocess outputs
+%   6B [line 3412]: Runtime summary and timing diagnostics
+%   6B-I [line 3413]: Pre-final-write memory/progress sample
+%   6B-II [line 3454]: Explicit substep timing diagnostic
+%   6C [line 3593]: Final run summary, end-of-run full save, and final status files
+%   6C-I [line 3594]: Gather the final warning summary and last MEMMON state
+%   6C-II [line 3626]: Optional end-of-run full-output save
+%   6C-III [line 3681]: Finalize run-status and run-pointer files
 %
 %==========================================================================
 %
@@ -521,27 +526,28 @@ allow_keldysh_cache_reuse_without_match = false; % true lets CerUPP reuse a
 nla_use_ofi_rate_law_flag = true;
 
 % OFI event-energy accounting.
-% The default OFI-based NLA sink uses the accepted numerical OFI event
-% ledger from the plasma step. It removes optical energy from the NLA
-% substep according to the applied OFI increment after source depletion,
-% density limits, and numerical clipping/projection.
-% The rate_matched mode is the explicit local ODE law
-% dI/dz = -Udep_matched*rho_scale*W_ion(I).
-% nla_check_ofi_event_energy_flag records the event-energy check without
-% changing the field. nla_use_ofi_event_depletion_flag applies the plasma
-% OFI event increment as NLA optical loss. Event depletion requires plasma OFI
-% bookkeeping, OFI-based NLA, and matching plasma/NLA neutral-reservoir
-% weighting. nla_ofi_energy_accounting_mode records rate_matched,
-% ofi_event_check, or ofi_event_depletion. Avalanche and recombination use
-% separate plasma/Drude channels.
+% nla_ofi_energy_accounting_mode selects the OFI-based NLA energy-accounting
+% mode used when nla_use_ofi_rate_law_flag=true. CerUPP accepts rate_matched,
+% ofi_event_check, and ofi_event_depletion. rate_matched uses the local smooth
+% loss law dI/dz = -Udep_matched*rho_scale*W_ion(I), so
+% nla_check_ofi_event_energy_flag=false and
+% nla_use_ofi_event_depletion_flag=false. ofi_event_check reports the energy
+% that would be removed by Udep_matched times the applied plasma OFI event
+% increment without changing the propagated field. ofi_event_depletion uses that
+% applied plasma OFI event increment as the NLA optical loss applied to the
+% field, so nla_check_ofi_event_energy_flag=false and
+% nla_use_ofi_event_depletion_flag=true. Event depletion requires
+% nla_use_ofi_rate_law_flag=true, plasma OFI bookkeeping, OFI-based NLA,
+% nla_check_ofi_event_energy_flag=false,
+% nla_use_ofi_event_depletion_flag=true,
+% plasma_ofi_use_remaining_neutral_factor_flag=true, and
+% nla_use_remaining_neutral_factor_flag=true before density limits and
+% numerical clipping/projection.
 nla_ofi_energy_accounting_mode = 'ofi_event_depletion';
-nla_check_ofi_event_energy_flag = false;
-nla_use_ofi_event_depletion_flag = true;
 [nla_ofi_energy_accounting_mode, ~, nla_check_ofi_event_energy_flag, ...
     nla_use_ofi_event_depletion_flag] = ...
     nla_support.resolve_ofi_depletion_accounting_mode( ...
-        nla_ofi_energy_accounting_mode, nla_check_ofi_event_energy_flag, ...
-        nla_use_ofi_event_depletion_flag);
+        nla_ofi_energy_accounting_mode);
 
 % NLA sink weighting.
 % In static beta_K mode, true uses clamp((rho_supply-rho)/rho_nt,0,1);
