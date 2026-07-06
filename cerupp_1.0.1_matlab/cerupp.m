@@ -984,7 +984,7 @@ n2_kerr_disable_tol = 1e-228; % [m^2/W] near-zero Kerr-disable tolerance. Values
 w0 = (fwhm_fund/2) * sqrt(2/log(2)); % [m] 1/e^2 Gaussian beam radius corresponding to fwhm_fund.
 
 % Beam 1 launch conditions
-p_input         = 6.0;                              %[MW] peak-power scale used to set the beam-1 intensity
+p_input         = 3.0;                              %[MW] peak-power scale used to set the beam-1 intensity
 p_input_w = p_input * 1e6;                         % [W] beam-1 peak power converted from the user MW knob above.
 i_laser_peak = 2 * p_input_w / (pi * w0^2);       % [W/m^2] beam-1 Gaussian on-axis peak intensity at launch.
 dkx_offset_angle = 0.0;                            %[rad] x launch angle
@@ -1198,8 +1198,8 @@ medium_builder_custom_args = struct();
 % 1E. Computational parameters.
 % 1E-I. Computational setup knobs.
 % Simulation domain.
-distance_to_propagate = 15.0e-3;     %[m] propagation distance
-stepsize              = 4e-6;      %[m] z step
+distance_to_propagate = .00132;     %[m] propagation distance
+stepsize              = 2e-6;      %[m] z step
 nonparaxial_diffraction_order = 2; % Truncation order of k_perp-series for kz=sqrt(k(omega)^2-k_perp^2): 2 => paraxial baseline (keep k_perp^2 term).
 % Supported values are discrete even orders only (currently 2, 4, 6, 8).
 
